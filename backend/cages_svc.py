@@ -7,6 +7,7 @@ from auth import AuthHeader, require_user, require_writer
 from db import connect, now_iso, write_audit
 from locks import release, require_lock
 from models import CageFreezeIn
+from reconcile_svc import _frozen_matches
 
 router = APIRouter(tags=["cages"])
 
@@ -50,11 +51,22 @@ def get_cage(cage_id: int, authorization: AuthHeader = None):
             "SELECT * FROM forfeits WHERE cage_id=? ORDER BY id DESC",
             (cage_id,),
         ).fetchall()
+        acct = conn.execute(
+            "SELECT balance, frozen FROM bond_accounts WHERE party_key=?",
+            (cage["party_key"],),
+        ).fetchone()
+        frozen_ok, frozen_proof = _frozen_matches(conn, cage["party_key"], acct)
         return {
             "cage": dict(cage),
             "attestations": [dict(a) for a in atts],
             "releases": [dict(r) for r in rels],
             "forfeits": [dict(f) for f in fors],
+            "account": {
+                "balance": float(acct["balance"]) if acct else None,
+                "frozen": frozen_proof["left"],
+                "live_cage_available": frozen_proof["right"],
+                "frozen_matches_live": frozen_ok,
+            },
         }
 
 

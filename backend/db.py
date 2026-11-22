@@ -97,6 +97,8 @@ CREATE TABLE IF NOT EXISTS releases(
   cage_generation INTEGER NOT NULL,
   status TEXT NOT NULL,
   release_ref TEXT NOT NULL,
+  frozen_deducted REAL NOT NULL DEFAULT 0,
+  account_frozen_after REAL,
   created_at TEXT NOT NULL,
   FOREIGN KEY(cage_id) REFERENCES cages(id)
 );
@@ -269,9 +271,22 @@ def seed_attest_samples(conn: sqlite3.Connection) -> None:
         # 不预置通过/违约结论，只保证表可查；实际核验由业务动作写入
 
 
+def _ensure_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
+    cols = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+    if column not in cols:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
+
+
+def migrate(conn: sqlite3.Connection) -> None:
+    """BUGFIX-01：旧库补齐扣冻留痕列，不重写既有行。"""
+    _ensure_column(conn, "releases", "frozen_deducted", "REAL NOT NULL DEFAULT 0")
+    _ensure_column(conn, "releases", "account_frozen_after", "REAL")
+
+
 def init_db() -> None:
     with connect() as conn:
         conn.executescript(SCHEMA)
+        migrate(conn)
         seed_users(conn)
         seed_bonds(conn)
         seed_cages(conn)

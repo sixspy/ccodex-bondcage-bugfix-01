@@ -1,0 +1,17 @@
+{
+  "product": "保证金笼",
+  "bug": "BUGFIX-01 解笼写口落拨付后漏扣冻结",
+  "path": "甲",
+  "doctrine": "拨付入册则账户冻结必同步扣减；否则整笔正式零改，记出金扣冻偏航并拒写",
+  "locked_on": "2026-11-22",
+  "forbidden_paths": [
+    "乙",
+    "第三路",
+    "影子拨付",
+    "只改互证灯颜色"
+  ],
+  "deviation_action": "release_freeze_deviation",
+  "deviation_label": "出金扣冻偏航",
+  "contention": "同笼双人并发出金须抢笼锁，后到只记争用",
+  "spec_sha256": "13bfdafc08484ca775f81b5b0e00d947a2977ec474618ee08fbdac2750d9f8ff"
+}

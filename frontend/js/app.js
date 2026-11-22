@@ -48,6 +48,12 @@ createApp({
     const selectedCage = ref(null);
     const topupJobs = ref([]);
     const splitJobs = ref([]);
+    const releaseDeviations = ref([]);
+    const releaseFate = ref(null);
+
+    function releaseFreezeClass(r) {
+      return Number(r.frozen_deducted) === Number(r.amount) ? "pass" : "fail";
+    }
 
     const bondForm = ref({
       party_key: "P-NEW",
@@ -195,6 +201,7 @@ createApp({
           lk,
           tj,
           sj,
+          dv,
         ] = await Promise.all([
           api.bonds(),
           api.cages(),
@@ -207,6 +214,7 @@ createApp({
           api.locks(),
           api.topupJobs(),
           api.splitJobs(),
+          api.deviations(),
         ]);
         bonds.value = b.items || [];
         cages.value = c.items || [];
@@ -219,6 +227,13 @@ createApp({
         locks.value = lk.items || [];
         topupJobs.value = tj.items || [];
         splitJobs.value = sj.items || [];
+        releaseDeviations.value = dv.items || [];
+        releaseFate.value = {
+          ...(dv.fate || { path: "甲", locked_on: "2026-11-22" }),
+          last: releases.value.find(
+            (x) => x.cage_id === releaseForm.value.cage_id
+          ),
+        };
         if (!attestForm.value.cage_id && frozenCages.value.length) {
           attestForm.value.cage_id = frozenCages.value[0].id;
         }
@@ -417,6 +432,9 @@ createApp({
       selectedCage,
       topupJobs,
       splitJobs,
+      releaseDeviations,
+      releaseFate,
+      releaseFreezeClass,
       bondForm,
       depositForm,
       freezeForm,

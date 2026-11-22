@@ -354,6 +354,28 @@ th {
   line-height: 1.45;
 }
 
+.fate-box {
+  border: 1.5px solid var(--stamp);
+  background: #fffbeb;
+  padding: 10px 12px;
+  margin-top: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.deviation-box {
+  border: 1.5px solid var(--bad);
+  background: #fee2e2;
+  padding: 10px 12px;
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.deviation-box ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
 .stub-banner {
   border: 2px solid var(--stamp);
   background: #ffedd5;

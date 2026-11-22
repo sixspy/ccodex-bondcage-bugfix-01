@@ -62,6 +62,15 @@ export const cagesViewTemplate = `
         <tr><td>核验条数</td><td>{{ cageDetail.attestations.length }}</td></tr>
         <tr><td>拨付条数</td><td>{{ cageDetail.releases.length }}</td></tr>
         <tr><td>罚没条数</td><td>{{ cageDetail.forfeits.length }}</td></tr>
+        <tr>
+          <td>账户冻结 / 活笼可用</td>
+          <td>
+            {{ fmt(cageDetail.account.frozen) }} / {{ fmt(cageDetail.account.live_cage_available) }}
+            <span class="badge" :class="cageDetail.account.frozen_matches_live?'pass':'fail'">
+              {{ cageDetail.account.frozen_matches_live ? '冻结一致' : '冻结失衡' }}
+            </span>
+          </td>
+        </tr>
       </tbody>
     </table>
   </div>

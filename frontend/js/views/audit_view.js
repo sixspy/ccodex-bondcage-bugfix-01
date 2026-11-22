@@ -2,6 +2,15 @@ export const auditViewTemplate = `
 <section class="panel">
   <h2>审计争用</h2>
   <p class="hint">写动作落审计；后到争用只记 contention，不写业务。</p>
+  <div class="deviation-box" v-if="releaseDeviations.length">
+    <h3>出金扣冻偏航 {{ releaseDeviations.length }} 条</h3>
+    <p>甲路径被破：拨付册未增，冻结未降，须人工处置。下方审计载荷含被拒写金额与原因。</p>
+    <ul>
+      <li v-for="d in releaseDeviations" :key="d.id">
+        {{ d.created_at }} · {{ d.target }} · {{ d.payload.reason }}
+      </li>
+    </ul>
+  </div>
   <div class="grid-2">
     <div>
       <h3>审计</h3>

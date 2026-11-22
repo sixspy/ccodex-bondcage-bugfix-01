@@ -1,4 +1,7 @@
-"""保证金账户：开户、入金、查询。"""
+"""保证金账户：开户、入金、查询。
+
+BUGFIX-01：账户面呈现「活笼可用」与冻结互证，解笼拨付的冻结扣减须可对账。
+"""
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
@@ -7,8 +10,18 @@ from auth import AuthHeader, require_user, require_writer
 from db import connect, now_iso, write_audit
 from locks import release, require_lock
 from models import BondOpenIn, DepositIn
+from reconcile_svc import _frozen_matches, _live_frozen
 
 router = APIRouter(tags=["bonds"])
+
+
+def _account_view(conn, row) -> dict:
+    acct = dict(row)
+    ok, proof = _frozen_matches(conn, row["party_key"], row)
+    acct["live_cage_available"] = _live_frozen(conn, row["party_key"])
+    acct["frozen_matches_live"] = ok
+    acct["frozen_proof"] = proof
+    return acct
 
 
 @router.get("/api/bonds")
@@ -18,7 +31,7 @@ def list_bonds(authorization: AuthHeader = None):
         rows = conn.execute(
             """SELECT * FROM bond_accounts ORDER BY id"""
         ).fetchall()
-        return {"items": [dict(r) for r in rows]}
+        return {"items": [_account_view(conn, r) for r in rows]}
 
 
 @router.get("/api/bonds/{party_key}")
@@ -39,10 +52,20 @@ def get_bond(party_key: str, authorization: AuthHeader = None):
                FROM cages WHERE party_key=? ORDER BY id DESC""",
             (party_key,),
         ).fetchall()
+        release_freeze = conn.execute(
+            """SELECT r.id, r.release_ref, r.cage_id, c.cage_code, r.amount,
+                      r.frozen_deducted, r.account_frozen_after, r.created_at
+               FROM releases r
+               JOIN cages c ON c.id=r.cage_id
+               WHERE c.party_key=? AND r.status='已拨付'
+               ORDER BY r.id DESC LIMIT 50""",
+            (party_key,),
+        ).fetchall()
         return {
-            "account": dict(row),
+            "account": _account_view(conn, row),
             "deposits": [dict(d) for d in deposits],
             "cages": [dict(c) for c in cages],
+            "release_freeze": [dict(x) for x in release_freeze],
         }
 
 

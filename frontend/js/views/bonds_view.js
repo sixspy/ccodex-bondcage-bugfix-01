@@ -1,7 +1,11 @@
 export const bondsViewTemplate = `
 <section class="panel">
   <h2>保证金户</h2>
-  <p class="hint">开户入金后，可用额 = 余额 − 已冻结。入笼只动冻结，不解出系统。</p>
+  <p class="hint">
+    开户入金后，可用额 = 余额 − 已冻结。入笼只动冻结，不解出系统。
+    解笼拨付时<strong>冻结扣减</strong>须与拨付同额；下方「冻结互证」按真实账户冻结
+    与<strong>活笼可用</strong>合计比对，不恒绿。
+  </p>
   <div class="grid-2">
     <div>
       <h3>开户</h3>
@@ -46,7 +50,7 @@ export const bondsViewTemplate = `
       <h3>账户一览</h3>
       <table>
         <thead>
-          <tr><th>键</th><th>名称</th><th>余额</th><th>冻结</th><th>可用</th><th>状态</th></tr>
+          <tr><th>键</th><th>名称</th><th>余额</th><th>冻结</th><th>可用</th><th>活笼可用</th><th>冻结互证</th><th>状态</th></tr>
         </thead>
         <tbody>
           <tr v-for="b in bonds" :key="b.id" @click="loadBondDetail(b.party_key)" style="cursor:pointer">
@@ -55,6 +59,12 @@ export const bondsViewTemplate = `
             <td>{{ fmt(b.balance) }}</td>
             <td>{{ fmt(b.frozen) }}</td>
             <td>{{ fmt(b.balance - b.frozen) }}</td>
+            <td>{{ fmt(b.live_cage_available) }}</td>
+            <td>
+              <span class="badge" :class="b.frozen_matches_live?'pass':'fail'">
+                {{ b.frozen_matches_live ? '一致' : '失衡' }}
+              </span>
+            </td>
             <td><span class="badge frozen">{{ b.status }}</span></td>
           </tr>
         </tbody>
@@ -70,6 +80,32 @@ export const bondsViewTemplate = `
               <td>{{ d.memo }}</td>
               <td>{{ d.created_at }}</td>
               <td>{{ d.actor }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="proof-box">
+          冻结互证：账户冻结 {{ fmt(bondDetail.account.frozen) }}
+          · 活笼可用 {{ fmt(bondDetail.account.live_cage_available) }}
+          · {{ bondDetail.account.frozen_matches_live ? '一致' : '失衡' }}
+        </div>
+        <h3 style="margin-top:12px">解笼扣冻留痕</h3>
+        <table>
+          <thead><tr><th>凭证</th><th>笼</th><th>拨付</th><th>冻结扣减</th><th>扣后冻结</th><th>时间</th></tr></thead>
+          <tbody>
+            <tr v-for="r in bondDetail.release_freeze" :key="r.id">
+              <td>{{ r.release_ref }}</td>
+              <td>{{ r.cage_code }}</td>
+              <td>{{ fmt(r.amount) }}</td>
+              <td>
+                <span class="badge" :class="r.frozen_deducted === r.amount ? 'pass' : 'fail'">
+                  {{ fmt(r.frozen_deducted) }}
+                </span>
+              </td>
+              <td>{{ fmt(r.account_frozen_after) }}</td>
+              <td>{{ r.created_at }}</td>
+            </tr>
+            <tr v-if="!(bondDetail.release_freeze||[]).length">
+              <td colspan="6">尚无解笼拨付，冻结未动。</td>
             </tr>
           </tbody>
         </table>
